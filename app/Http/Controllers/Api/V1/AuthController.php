@@ -1,0 +1,138 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Auth\LoginRequest;
+use App\Http\Requests\Api\V1\Auth\RegisterRequest;
+use App\Http\Resources\Api\V1\UserResource;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
+
+class AuthController extends Controller
+{
+   /**
+    * Register a new user.
+    */
+   public function register(RegisterRequest $request): JsonResponse
+   {
+      $user = User::create([
+         'name' => $request->name,
+         'email' => $request->email,
+         'password' => Hash::make($request->password),
+         'phone' => $request->phone,
+      ]);
+
+      $token = $user->createToken('auth-token')->plainTextToken;
+
+      return response()->json([
+         'message' => 'Registrasi berhasil',
+         'user' => new UserResource($user),
+         'token' => $token,
+      ], 201);
+   }
+
+   /**
+    * Login user and create token.
+    */
+   public function login(LoginRequest $request): JsonResponse
+   {
+      $user = User::where('email', $request->email)->first();
+
+      if (!$user || !Hash::check($request->password, $user->password)) {
+         throw ValidationException::withMessages([
+            'email' => ['Email atau password salah.'],
+         ]);
+      }
+
+      // Revoke old tokens if needed
+      if ($request->boolean('revoke_others', false)) {
+         $user->tokens()->delete();
+      }
+
+      $token = $user->createToken('auth-token')->plainTextToken;
+
+      return response()->json([
+         'message' => 'Login berhasil',
+         'user' => new UserResource($user),
+         'token' => $token,
+      ]);
+   }
+
+   /**
+    * Get authenticated user profile.
+    */
+   public function me(Request $request): JsonResponse
+   {
+      return response()->json([
+         'user' => new UserResource($request->user()),
+      ]);
+   }
+
+   /**
+    * Logout user (revoke current token).
+    */
+   public function logout(Request $request): JsonResponse
+   {
+      /** @var \Laravel\Sanctum\PersonalAccessToken $token */
+      $token = $request->user()->currentAccessToken();
+      $token->delete();
+
+      return response()->json([
+         'message' => 'Logout berhasil',
+      ]);
+   }
+
+   /**
+    * Refresh token (create new token, revoke old).
+    */
+   public function refresh(Request $request): JsonResponse
+   {
+      $user = $request->user();
+
+      // Revoke current token
+      /** @var \Laravel\Sanctum\PersonalAccessToken $token */
+      $token = $user->currentAccessToken();
+      $token->delete();
+
+      // Create new token
+      $token = $user->createToken('auth-token')->plainTextToken;
+
+      return response()->json([
+         'message' => 'Token berhasil diperbarui',
+         'token' => $token,
+      ]);
+   }
+
+   /**
+    * Update user profile.
+    */
+   public function updateProfile(Request $request): JsonResponse
+   {
+      $request->validate([
+         'name' => 'sometimes|string|max:255',
+         'phone' => 'sometimes|string|max:20',
+         'avatar_url' => 'sometimes|nullable|url|max:500',
+         'push_notifications' => 'sometimes|boolean',
+         'weekly_report' => 'sometimes|boolean',
+      ]);
+
+      $user = $request->user();
+      $user->update($request->only([
+         'name',
+         'phone',
+         'avatar_url',
+         'push_notifications',
+         'weekly_report'
+      ]));
+
+      return response()->json([
+         'message' => 'Profil berhasil diperbarui',
+         'user' => new UserResource($user->fresh()),
+      ]);
+   }
+}
