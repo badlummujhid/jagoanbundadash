@@ -15,6 +15,10 @@ return new class extends Migration
          $table->id();
          $table->tinyInteger('age_months')->unsigned()->unique()
             ->comment('Usia dalam bulan: 2, 4, 6, ..., 60');
+         $table->tinyInteger('min_age_months')->unsigned()
+            ->comment('Batas bawah usia dalam bulan');
+         $table->tinyInteger('max_age_months')->unsigned()
+            ->comment('Batas atas usia dalam bulan');
          $table->string('age_label', 50)
             ->comment('Label: 2 Bulan, 4 Bulan, dll');
          $table->integer('min_age_days')->unsigned()

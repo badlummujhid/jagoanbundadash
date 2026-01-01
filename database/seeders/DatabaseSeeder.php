@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             Asq3DomainSeeder::class,
             Asq3AgeIntervalSeeder::class,
+            Asq3QuestionSeeder::class,  // NEW: Import from CSV
             FoodSeeder::class,
             PmtMenuSeeder::class,
         ]);
@@ -72,5 +73,12 @@ class DatabaseSeeder extends Seeder
         User::factory(5)
             ->has(Child::factory()->count(rand(1, 3)))
             ->create();
+
+        // 6. Seed PMT schedules and logs (after children exist)
+        $this->call([
+            PmtScheduleSeeder::class,
+            PmtLogSeeder::class,
+            Asq3ScreeningSeeder::class,
+        ]);
     }
 }
