@@ -114,7 +114,9 @@ function getDomainStatusBadge(status: string) {
 
 export default function ScreeningResults({ screening }: Props) {
     const domainResults = screening.domain_results || [];
-    const totalScore = domainResults.reduce((sum, d) => sum + Number(d.total_score), 0);
+    // Pre-convert scores to numbers for better performance
+    const domainScores = domainResults.map(d => Number(d.total_score));
+    const totalScore = domainScores.reduce((sum, score) => sum + score, 0);
     const maxTotalScore = domainResults.length * MAX_DOMAIN_SCORE;
     const overallProgress = maxTotalScore > 0 ? (totalScore / maxTotalScore) * 100 : 0;
 
@@ -218,10 +220,11 @@ export default function ScreeningResults({ screening }: Props) {
                     </CardHeader>
                     <CardContent className="p-0">
                         <div className="divide-y">
-                            {domainResults.map((domain) => {
+                            {domainResults.map((domain, index) => {
                                 const config = domainConfig[domain.domain_code] || defaultDomainConfig;
                                 const DomainIcon = config.icon;
-                                const progress = (Number(domain.total_score) / MAX_DOMAIN_SCORE) * 100;
+                                const score = domainScores[index];
+                                const progress = (score / MAX_DOMAIN_SCORE) * 100;
 
                                 return (
                                     <div key={domain.domain_id} className="p-6">
@@ -233,7 +236,7 @@ export default function ScreeningResults({ screening }: Props) {
                                                 <div>
                                                     <h3 className="font-semibold text-lg">{domain.domain_name}</h3>
                                                     <p className="text-sm text-muted-foreground">
-                                                        Skor: {domain.total_score} / {MAX_DOMAIN_SCORE}
+                                                        Skor: {score} / {MAX_DOMAIN_SCORE}
                                                     </p>
                                                 </div>
                                             </div>
