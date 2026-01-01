@@ -28,7 +28,7 @@ export function PaginationNav({
         return `${baseUrl}?${params.toString()}`;
     };
 
-    const from = (currentPage - 1) * perPage + 1;
+    const from = total === 0 ? 0 : (currentPage - 1) * perPage + 1;
     const to = Math.min(currentPage * perPage, total);
 
     return (
