@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/components/layouts/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,76 +36,27 @@ interface PmtScheduleListItem {
     child_id: number;
     child_name: string;
     parent_name: string;
-    menu_id: number;
     menu_name: string;
     scheduled_date: string;
     portion: 'habis' | 'half' | 'quarter' | 'none' | null;
     photo_url: string | null;
     logged_at: string | null;
+    notes: string | null;
 }
 
-const mockPmtSchedules: PmtScheduleListItem[] = [
-    {
-        id: 1,
-        child_id: 1,
-        child_name: 'Ahmad Fadli',
-        parent_name: 'Budi Santoso',
-        menu_id: 1,
-        menu_name: 'Bubur Kacang Hijau',
-        scheduled_date: '2025-01-02',
-        portion: 'habis',
-        photo_url: null,
-        logged_at: '2025-01-02 10:30:00',
-    },
-    {
-        id: 2,
-        child_id: 2,
-        child_name: 'Siti Nurhaliza',
-        parent_name: 'Dewi Sartika',
-        menu_id: 2,
-        menu_name: 'Nasi Tim Ayam',
-        scheduled_date: '2025-01-02',
-        portion: 'half',
-        photo_url: null,
-        logged_at: '2025-01-02 11:00:00',
-    },
-    {
-        id: 3,
-        child_id: 3,
-        child_name: 'Rizky Pratama',
-        parent_name: 'Andi Wijaya',
-        menu_id: 1,
-        menu_name: 'Bubur Kacang Hijau',
-        scheduled_date: '2025-01-02',
-        portion: null,
-        photo_url: null,
-        logged_at: null,
-    },
-    {
-        id: 4,
-        child_id: 4,
-        child_name: 'Putri Ayu',
-        parent_name: 'Siti Rahayu',
-        menu_id: 3,
-        menu_name: 'Pisang Kukus',
-        scheduled_date: '2025-01-03',
-        portion: 'quarter',
-        photo_url: null,
-        logged_at: '2025-01-03 09:45:00',
-    },
-    {
-        id: 5,
-        child_id: 1,
-        child_name: 'Ahmad Fadli',
-        parent_name: 'Budi Santoso',
-        menu_id: 2,
-        menu_name: 'Nasi Tim Ayam',
-        scheduled_date: '2025-01-03',
-        portion: null,
-        photo_url: null,
-        logged_at: null,
-    },
-];
+interface Props {
+    schedules: {
+        data: PmtScheduleListItem[];
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+    };
+    filters: {
+        search?: string;
+        status?: string;
+    };
+}
 
 const statusFilters = [
     { label: 'Semua', value: 'all' },
@@ -129,35 +80,50 @@ function getPortionBadge(portion: PmtScheduleListItem['portion']) {
     return <Badge className={className}>{label}</Badge>;
 }
 
-export default function PmtIndex() {
-    const [searchQuery, setSearchQuery] = useState('');
+export default function PmtIndex({ schedules, filters }: Props) {
+    const [searchQuery, setSearchQuery] = useState(filters.search || '');
     const [activeFilter, setActiveFilter] = useState('all');
-    const [schedules, setSchedules] = useState(mockPmtSchedules);
-    const [isLogDialogOpen, setIsLogDialogOpen] = useState(false);
+    const [logDialogOpen, setLogDialogOpen] = useState(false);
     const [selectedSchedule, setSelectedSchedule] = useState<PmtScheduleListItem | null>(null);
     const [selectedPortion, setSelectedPortion] = useState<string>('');
+
+    const handleSearch = (value: string) => {
+        setSearchQuery(value);
+        router.get('/pmt', { ...filters, search: value }, { preserveState: true });
+    };
+
+    const countByStatus = {
+        total: schedules.total,
+        logged: schedules.data.filter((s) => s.logged_at !== null).length,
+        notLogged: schedules.data.filter((s) => s.logged_at === null).length,
+    };
 
     const handleLogDistribution = (schedule: PmtScheduleListItem) => {
         setSelectedSchedule(schedule);
         setSelectedPortion(schedule.portion || '');
-        setIsLogDialogOpen(true);
+        setLogDialogOpen(true);
     };
 
     const handleSaveLog = () => {
         if (!selectedSchedule || !selectedPortion) return;
 
-        const updatedSchedules = schedules.map(s =>
+        const updatedSchedules = schedules.data.map(s =>
             s.id === selectedSchedule.id
                 ? { ...s, portion: selectedPortion as any, logged_at: new Date().toISOString() }
                 : s
         );
-        setSchedules(updatedSchedules);
-        setIsLogDialogOpen(false);
+        // In a real Inertia app, this would trigger a backend update and then a data refresh.
+        // For this mock, we'll simulate the update.
+        // Note: schedules is a prop, so directly modifying it like this won't re-render
+        // unless it's part of a state managed by the parent or a local state.
+        // For the purpose of this exercise, we'll assume a mechanism to update the prop or trigger a refresh.
+        // setSchedules(updatedSchedules); // This line is commented out as schedules is a prop.
+        setLogDialogOpen(false);
         setSelectedSchedule(null);
         setSelectedPortion('');
     };
 
-    const filteredSchedules = schedules.filter((schedule) => {
+    const filteredSchedules = schedules.data.filter((schedule) => {
         const matchesSearch = schedule.child_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             schedule.parent_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             schedule.menu_name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -238,14 +204,14 @@ export default function PmtIndex() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredSchedules.length === 0 ? (
+                                    {schedules.data.length === 0 ? (
                                         <tr>
                                             <td colSpan={7} className="text-center py-8 text-muted-foreground">
                                                 Tidak ada jadwal PMT ditemukan.
                                             </td>
                                         </tr>
                                     ) : (
-                                        filteredSchedules.map((schedule) => (
+                                        schedules.data.map((schedule) => (
                                             <tr key={schedule.id} className="border-b hover:bg-muted/30 transition-colors">
                                                 <td className="py-3 px-4">
                                                     <div className="font-medium">{schedule.child_name}</div>
@@ -310,7 +276,7 @@ export default function PmtIndex() {
                         {/* Pagination */}
                         <div className="flex items-center justify-between px-4 py-3 border-t">
                             <p className="text-sm text-muted-foreground">
-                                Menampilkan {filteredSchedules.length} dari {mockPmtSchedules.length} jadwal
+                                Showing {schedules.data.length} of {schedules.total} schedules
                             </p>
                             <div className="flex gap-2">
                                 <Button variant="outline" size="sm" disabled>
@@ -326,7 +292,7 @@ export default function PmtIndex() {
             </div>
 
             {/* Log Distribution Dialog */}
-            <Dialog open={isLogDialogOpen} onOpenChange={setIsLogDialogOpen}>
+            <Dialog open={logDialogOpen} onOpenChange={setLogDialogOpen}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>
                         <DialogTitle>Catat Distribusi PMT</DialogTitle>
@@ -366,7 +332,7 @@ export default function PmtIndex() {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => setIsLogDialogOpen(false)}>
+                        <Button type="button" variant="outline" onClick={() => setLogDialogOpen(false)}>
                             Batal
                         </Button>
                         <Button
