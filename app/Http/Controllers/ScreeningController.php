@@ -8,6 +8,7 @@ use App\Models\Asq3AgeInterval;
 use App\Models\Asq3Screening;
 use App\Models\Child;
 use Illuminate\Http\RedirectResponse;
+use App\Http\Requests\StoreScreeningRequest;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -233,6 +234,8 @@ class ScreeningController extends Controller
         ]);
 
         return redirect()->route('screenings.index')->with('success', 'Screening updated successfully');
+            'status' => 'in_progress',
+        ]);
     }
 
     /**

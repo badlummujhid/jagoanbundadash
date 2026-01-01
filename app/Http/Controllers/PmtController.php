@@ -224,6 +224,20 @@ class PmtController extends Controller
     }
 
     /**
+     * Store a new PMT schedule.
+     */
+    public function store(StorePmtScheduleRequest $request)
+    {
+        PmtSchedule::create([
+            'child_id' => $request->child_id,
+            'menu_id' => $request->menu_id,
+            'scheduled_date' => $request->scheduled_date,
+        ]);
+
+        return redirect()->route('pmt.index')->with('success', 'Jadwal PMT berhasil dibuat.');
+    }
+
+    /**
      * Remove the specified PMT schedule.
      */
     public function destroy(string $id): RedirectResponse
