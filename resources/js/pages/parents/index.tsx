@@ -99,10 +99,10 @@ export default function ParentsIndex({ parents, filters }: Props) {
                                                 <div className="flex items-center gap-3">
                                                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                                                         <span className="text-sm font-medium text-primary">
-                                                            {parent.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                                                            {(parent.full_name || 'U').split(' ').map(n => n[0]).join('').slice(0, 2)}
                                                         </span>
                                                     </div>
-                                                    <span className="font-medium">{parent.full_name}</span>
+                                                    <span className="font-medium">{parent.full_name || 'Unknown'}</span>
                                                 </div>
                                             </td>
                                             <td className="py-3 px-4">
